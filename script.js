@@ -7,12 +7,14 @@ let inventario = [
 // Función para generar la tabla de inventario
 function generarTabla() {
     const tabla = document.getElementById('tabla-inventario');
-    tabla.innerHTML = ''; // Limpiar la tabla antes de generarla nuevamente
+    tabla.innerHTML = '';  // Limpiar la tabla antes de generarla nuevamente
 
     // Crear la fila de encabezado
     let encabezado = '<tr>';
-    for (let campo in inventario[0]) {
-        encabezado += `<th>${campo}</th>`;
+    if (inventario.length > 0) {
+        for (let campo in inventario[0]) {
+            encabezado += `<th>${campo}</th>`;
+        }
     }
     encabezado += '</tr>';
     tabla.innerHTML += encabezado;
@@ -31,24 +33,19 @@ function generarTabla() {
 // Función para agregar una fila nueva
 function agregarFila() {
     const nuevoID = inventario.length + 1;
-    const nuevaFila = { ID: nuevoID };
-    Object.keys(inventario[0]).forEach(key => {
-        if (key !== 'ID') {
-            nuevaFila[key] = ""; // Asigna un valor inicial vacío para otras columnas
-        }
-    });
-    inventario.push(nuevaFila);
+    const nuevoProducto = { ID: nuevoID, NOMBRE: "Nuevo Producto", CODIGO: "", MARCA: "", CANTIDAD: 0, ESTANTE: "" };
+    inventario.push(nuevoProducto);
     generarTabla();
 }
 
 // Función para agregar una columna nueva
 function agregarColumna() {
-    const nombreColumna = prompt("Ingrese el nombre de la nueva columna:");
-    if (nombreColumna) {
+    const nuevaColumna = prompt("Ingrese el nombre de la nueva columna:");
+    if (nuevaColumna) {
         inventario.forEach(item => {
-            item[nombreColumna] = ""; // Asigna un valor inicial vacío
+            item[nuevaColumna.toUpperCase()] = "";  // Añadir la nueva columna con valor vacío
         });
-        generarTabla(); // Regenerar la tabla para reflejar la nueva columna
+        generarTabla();
     }
 }
 
@@ -57,26 +54,37 @@ function actualizarDato(indice, campo, valor) {
     inventario[indice][campo] = valor;
 }
 
-// Función para exportar los datos del inventario a un archivo Excel (formato CSV)
+// Función para exportar los datos del inventario a un archivo Excel (formato XLS)
 function exportarExcel() {
-    let csv = Object.keys(inventario[0]).join(',') + '\n'; // Encabezados
+    let dataStr = 'data:application/vnd.ms-excel,' + encodeURIComponent(generarCSV());
+    let downloadAnchorNode = document.createElement('a');
+    downloadAnchorNode.setAttribute("href", dataStr);
+    downloadAnchorNode.setAttribute("download", "inventario.xls");
+    document.body.appendChild(downloadAnchorNode); // Required for Firefox
+    downloadAnchorNode.click();
+    downloadAnchorNode.remove();
+}
+
+// Función para generar CSV para la exportación
+function generarCSV() {
+    let csv = '';
+    if (inventario.length > 0) {
+        for (let campo in inventario[0]) {
+            csv += `${campo},`;
+        }
+        csv = csv.slice(0, -1) + '\n'; // Eliminar la última coma y agregar salto de línea
+    }
+
     inventario.forEach(item => {
-        csv += Object.values(item).join(',') + '\n'; // Datos
+        for (let campo in item) {
+            csv += `${item[campo]},`;
+        }
+        csv = csv.slice(0, -1) + '\n'; // Eliminar la última coma y agregar salto de línea
     });
 
-    // Crear un objeto Blob y descargar el archivo CSV
-    let blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    let link = document.createElement('a');
-    if (link.download !== undefined) {
-        let url = URL.createObjectURL(blob);
-        link.setAttribute('href', url);
-        link.setAttribute('download', 'inventario.csv');
-        link.style.visibility = 'hidden';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    }
+    return csv;
 }
 
 // Generar la tabla al cargar la página
 window.onload = generarTabla;
+
